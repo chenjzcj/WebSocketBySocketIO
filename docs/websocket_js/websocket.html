@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<script src="js/module_socket_io.js"></script>
+		<script src="js/module_socket_api.js"></script>
+		<script src="js/module_connect.js"></script>
+	</head>
+	<body>
+		<script>
+			
+	var HRY = {
+		host : '',
+		ver : '20180502cn',
+		user : '123109640@qq.com',
+		marketUrl : "127.0.0.1",
+		socketioUrl : "wss://node.tokok.com",
+		head : 'TOKOK',
+		redispush : 'no',
+		modules : {
+			web : '/manage/',
+			oauth : '/front_oauth/',
+			exmain : '/exmain/',
+			exstatic : '/',
+			calculate : '/calculate/'
+		}
+	}
+//		conn = io.connect("wss://node.tokok.com", {
+//          "force new connection": 0,
+//          "sync disconnect on unload": 0,
+//          "reconnection delay": 1000,
+//          "reconnection delay max" : 5000,
+//          "max reconnection attempts": 20
+//     });
+        var api_detail = SOCKET_API(1)['marketDetail0']("TOK_ETH")
+        var connect = connect("wss://node.tokok.com",{
+            "force new connection": 0,
+            "sync disconnect on unload": 0,
+            "reconnection delay": 1000,
+            "reconnection delay max" : 5000,
+            "max reconnection attempts": 20
+        });
+//        conn.on('disconnect', console.log(4));
+        connect.msg({
+                    msgType: 'reqMsgSubscribe',
+                    website: HRY.ver,symbol : "TOK_ETH",
+                    version: version || 1,
+                    requestIndex: Date.now(),
+                    symbolList: {
+                        "marketDetail0": [{
+                            symbolId: symbol,
+                            pushType: "pushLong"
+                        }]
+                    });
+
+		</script>
+	</body>
+</html>
