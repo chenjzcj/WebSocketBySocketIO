@@ -31,4 +31,16 @@
         android:layout_height="wrap_content"
         android:text="开始发送数据到服务器" />
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/tv_info"
+            android:layout_width="match_parent"
+            android:text="信息流："
+            android:layout_height="wrap_content" />
+    </ScrollView>
+
+
 </LinearLayout>

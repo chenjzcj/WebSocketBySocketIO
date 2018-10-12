@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<script src="js/module_socket_io.js"></script>
+	</head>
+	<body>
+		<script>
+       var a='{"msgType":"reqMsgSubscribe","website":"20180502cn","symbol":"TOK_ETH","version":1,"requestIndex":1539252446162,"symbolList":{"marketDetail0":[{"symbolId":"TOK_ETH","pushType":"pushLong"}]}}'
+       var socket = io.connect('wss://node.tokok.com');
+       socket.emit("request",JSON.parse(a));
+       socket.on('message',function(data){
+            console.log(data)
+       });
+		</script>
+	</body>
+</html>

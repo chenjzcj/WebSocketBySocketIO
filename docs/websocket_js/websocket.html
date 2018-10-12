@@ -42,18 +42,10 @@
             "max reconnection attempts": 20
         });
 //        conn.on('disconnect', console.log(4));
-        connect.msg({
-                    msgType: 'reqMsgSubscribe',
-                    website: HRY.ver,symbol : "TOK_ETH",
-                    version: version || 1,
-                    requestIndex: Date.now(),
-                    symbolList: {
-                        "marketDetail0": [{
-                            symbolId: symbol,
-                            pushType: "pushLong"
-                        }]
-                    });
-
+        connect.msg(api_detail.msg);
+        connect.reg("marketDetail0",function(data){
+            console.log(data)
+        });
 		</script>
 	</body>
 </html>
