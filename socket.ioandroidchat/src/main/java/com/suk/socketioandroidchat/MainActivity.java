@@ -11,6 +11,8 @@ import android.widget.Toast;
 
 import com.blankj.utilcode.util.LogUtils;
 import com.google.gson.Gson;
+import com.suk.socketioandroidchat.websocket.WebSocketHelper;
+import com.suk.socketioandroidchat.websocket.bean.EmitMessage;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,24 +29,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private Socket mSocket;
 
-    private String uri = "https://node.tokok.com";
     //private String uri = "https://socket-io-chat.now.sh/";
-
     private TextView tvInfo;
 
     private Boolean isConnected = false;
     private String mUsername = "这个名字好";
     private List<Message> mMessages = new ArrayList<>();
-
-    {
-        try {
-            //1.初始化socket.io，设置链接
-            mSocket = IO.socket(uri);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-    }
-
 
     private EditText mInputMessageView;
 
@@ -52,6 +42,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        WebSocketHelper.getInstance().init();
 
         mInputMessageView = findViewById(R.id.et_msg);
         tvInfo = findViewById(R.id.tv_info);
@@ -296,8 +288,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_connect:
-                //2.建立socket.io服务器的连接
-                mSocket.connect();
+                WebSocketHelper.getInstance().connect();
                 break;
             case R.id.btn_listener:
                 listener();
@@ -348,7 +339,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             LogUtils.i("heartbeatListener = " + args.length);
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
-                if (arg instanceof JSONObject){
+                if (arg instanceof JSONObject) {
                     LogUtils.json(arg.toString());
                 }
                 if (arg != null) {
@@ -364,7 +355,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             LogUtils.i("onStopTyping = " + args.length);
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
-                if (arg instanceof JSONObject){
+                if (arg instanceof JSONObject) {
                     LogUtils.json(arg.toString());
                 }
                 if (arg != null) {
@@ -386,7 +377,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mInputMessageView.setText("");
         //mSocket.emit("request", message);
 
-        TestBean testBean = new TestBean();
+        EmitMessage testBean = new EmitMessage();
         testBean.setMsgType("reqMsgSubscribe");
         testBean.setWebsite("20180502cn");
         //testBean.setSymbol("TOK_ETH");
@@ -394,9 +385,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         testBean.setVersion(1);
         testBean.setRequestIndex(System.currentTimeMillis());
 
-        TestBean.SymbolListBean symbolList = new TestBean.SymbolListBean();
-        List<TestBean.SymbolListBean.MarketDetail0Bean> marketDetail0 = new ArrayList<>();
-        marketDetail0.add(new TestBean.SymbolListBean.MarketDetail0Bean("TOK_ETH", "pushLong"));
+        EmitMessage.SymbolListBean symbolList = new EmitMessage.SymbolListBean();
+        List<EmitMessage.SymbolListBean.MarketDetail0Bean> marketDetail0 = new ArrayList<>();
+        marketDetail0.add(new EmitMessage.SymbolListBean.MarketDetail0Bean("TOK_ETH", "pushLong"));
         symbolList.setMarketDetail0(marketDetail0);
         testBean.setSymbolList(symbolList);
 
@@ -421,9 +412,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        WebSocketHelper.getInstance().release();
+
         //释放资源
         mSocket.disconnect();
-
         mSocket.off(Socket.EVENT_CONNECT, onConnect);
         mSocket.off(Socket.EVENT_DISCONNECT, onDisconnect);
         mSocket.off(Socket.EVENT_CONNECT_ERROR, onConnectError);

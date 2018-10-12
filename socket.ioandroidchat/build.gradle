@@ -34,6 +34,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     //常用工具套装 https://github.com/chenjzcj/AndroidUtilCode
     implementation 'com.blankj:utilcode:1.17.3'
+    //https://blog.csdn.net/l_lhc/article/details/68950278
     implementation('io.socket:socket.io-client:0.8.3') {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'

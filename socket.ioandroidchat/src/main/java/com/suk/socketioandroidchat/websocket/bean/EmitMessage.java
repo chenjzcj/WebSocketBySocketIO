@@ -1,11 +1,12 @@
-package com.suk.socketioandroidchat;
+package com.suk.socketioandroidchat.websocket.bean;
 
 import java.util.List;
 
 /**
  * Created by Felix.Zhong on 2018/10/10 15:40
+ * 向服务器发射的消息实体
  */
-public class TestBean {
+public class EmitMessage {
 
     /**
      * msgType : reqMsgSubscribe
@@ -25,7 +26,7 @@ public class TestBean {
 
     @Override
     public String toString() {
-        return "TestBean{" +
+        return "EmitMessage{" +
                 "msgType='" + msgType + '\'' +
                 ", website='" + website + '\'' +
                 ", symbol='" + symbol + '\'' +
