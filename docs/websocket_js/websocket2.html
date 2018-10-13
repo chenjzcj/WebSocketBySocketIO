@@ -7,6 +7,7 @@
 	</head>
 	<body>
 		<script>
+		<!--如果发身多条，会同时下发多条-->
        var a='{"msgType":"reqMsgSubscribe","website":"20180502cn","symbol":"TOK_ETH","version":1,"requestIndex":1539252446162,"symbolList":{"marketDetail0":[{"symbolId":"TOK_ETH","pushType":"pushLong"}]}}'
        var socket = io.connect('wss://node.tokok.com');
        socket.emit("request",JSON.parse(a));
