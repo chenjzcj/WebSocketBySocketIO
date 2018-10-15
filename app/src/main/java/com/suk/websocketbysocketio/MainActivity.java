@@ -5,8 +5,11 @@ import android.os.Bundle;
 import android.view.View;
 
 import com.blankj.utilcode.util.LogUtils;
+import com.suk.websocketbysocketio.websocket.DataAssembleHelper;
 
 import org.json.JSONObject;
+
+import java.util.Locale;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -37,17 +40,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btn_listener:
                 //监听服务端发送的数据
                 mSocket.on("message", messageListener);
-                mSocket.on("onlineLength",messageListener);
-                mSocket.on("kline",messageListener);
-                mSocket.on("messageBack",messageListener);
-                mSocket.on("request",messageListener);
-                mSocket.on("formalTrade",messageListener);
-                mSocket.on("login",messageListener);
                 break;
             case R.id.btn_senc_data:
                 //向服务端发送数据
-                mSocket.emit("message", "你好");
-                mSocket.emit("onlineLength","你好");
+                JSONObject jsonObject = DataAssembleHelper.getInstance().genEmitMessgeJson("TOK_ETH");
+                mSocket.emit("request",jsonObject);
                 break;
             default:
                 break;
@@ -57,16 +54,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Emitter.Listener messageListener = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
-            LogUtils.i("args");
-            //主线程调用
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    //JSONObject data = (JSONObject) args[0];
-                    //根据个人业务处理
-                    //LogUtils.json(data.toString());
-                }
-            });
+            printArgs(args);
         }
     };
+
+    /**
+     * 打印参数
+     *
+     * @param args 需要打印的可变参数
+     */
+    private void printArgs(Object... args) {
+        for (int i = 0; i < args.length; i++) {
+            LogUtils.i(String.format(Locale.CHINA, "arg[%d] = %s", i, args[i]));
+        }
+    }
 }
