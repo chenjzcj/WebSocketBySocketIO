@@ -5,3 +5,6 @@ https://www.jianshu.com/p/dc92715f3224
 
 Android使用socket.io实现即时通讯 对应socket.ioandroidchat
 https://blog.csdn.net/l_lhc/article/details/68950278
+
+重连等参考：
+https://github.com/nkzawa/socket.io-android-chat
