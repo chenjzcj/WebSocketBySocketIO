@@ -12,6 +12,7 @@ import android.widget.Toast;
 import com.blankj.utilcode.util.LogUtils;
 import com.google.gson.Gson;
 import com.suk.socketioandroidchat.websocket.WebSocketHelper;
+import com.suk.socketioandroidchat.websocket.bean.DataAssembleHelper;
 import com.suk.socketioandroidchat.websocket.bean.EmitMessage;
 
 import org.json.JSONException;
@@ -37,6 +38,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private List<Message> mMessages = new ArrayList<>();
 
     private EditText mInputMessageView;
+    private List<String> events;
+    private List<Emitter.Listener> listeners;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +54,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.btn_listener).setOnClickListener(this);
         findViewById(R.id.btn_senc_data).setOnClickListener(this);
 
+        events = new ArrayList<>();
+        events.add("new message");
+        events.add("user joined");
+        events.add("user left");
+        events.add("typing");
+        events.add("stop typing");
+        events.add("message");
+        listeners = new ArrayList<>();
+        listeners.add(onNewMessage);
+        listeners.add(onUserJoined);
+        listeners.add(onUserLeft);
+        listeners.add(onTyping);
+        listeners.add(commonListener);
     }
 
     private Emitter.Listener onConnect = new Emitter.Listener() {
@@ -291,7 +307,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 WebSocketHelper.getInstance().connect();
                 break;
             case R.id.btn_listener:
-                listener();
+                WebSocketHelper.getInstance().listener(events, listeners);
                 break;
             case R.id.btn_senc_data:
                 //向服务端发送数据
@@ -300,37 +316,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             default:
                 break;
         }
-    }
-
-    /**
-     * 监听服务端发送的数据,使用 onNewMessage 来监听服务器发来的 "new message" 事件
-     */
-    private void listener() {
-        //前面几个是系统默认的事件，后面的是自定义的事件
-        mSocket.on(Socket.EVENT_CONNECT, onConnect);
-        mSocket.on(Socket.EVENT_DISCONNECT, onDisconnect);
-        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectError);
-        mSocket.on(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
-        //mSocket.on("new message", onNewMessage);
-        //mSocket.on("user joined", onUserJoined);
-        //mSocket.on("user left", onUserLeft);
-        //mSocket.on("typing", onTyping);
-        //mSocket.on("stop typing", onStopTyping);
-        //mSocket.on("message", onNewMessage);
-
-
-        //mSocket.on("login", commonListener);
-        //mSocket.on("msg", commonListener);
-        mSocket.on("message", commonListener);
-        //mSocket.on("marketDetail0", commonListener);
-        mSocket.on("heartbeat", heartbeatListener);
-        //mSocket.on("data", commonListener);
-        //mSocket.on("onlineLength", commonListener);
-        //mSocket.on("messageBack", commonListener);
-        //mSocket.on("request", commonListener);
-        //mSocket.on("formalTrade", commonListener);
-        //mSocket.on("kline", commonListener);
-        //mSocket.on("marketDetail0", commonListener);
     }
 
     private Emitter.Listener heartbeatListener = new Emitter.Listener() {
@@ -375,65 +360,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //return;
         }
         mInputMessageView.setText("");
-        //mSocket.emit("request", message);
-
-        EmitMessage testBean = new EmitMessage();
-        testBean.setMsgType("reqMsgSubscribe");
-        testBean.setWebsite("20180502cn");
-        //testBean.setSymbol("TOK_ETH");
-        testBean.setSymbol("EOS_ETH");
-        testBean.setVersion(1);
-        testBean.setRequestIndex(System.currentTimeMillis());
-
-        EmitMessage.SymbolListBean symbolList = new EmitMessage.SymbolListBean();
-        List<EmitMessage.SymbolListBean.MarketDetail0Bean> marketDetail0 = new ArrayList<>();
-        marketDetail0.add(new EmitMessage.SymbolListBean.MarketDetail0Bean("TOK_ETH", "pushLong"));
-        symbolList.setMarketDetail0(marketDetail0);
-        testBean.setSymbolList(symbolList);
-
-        Gson gson = new Gson();
-        String json = gson.toJson(testBean);
-        LogUtils.i("json = " + json);
-        JSONObject jsonObject = null;
-        try {
-            jsonObject = new JSONObject(json);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        //此处一定把把json字符串转换成jsonobject,否则不行
-        mSocket.emit("request", jsonObject);
-
         //addMessage(mUsername, message);
-
         //mSocket.emit("new message", message);
-        //mSocket.emit("message", message);
+
+        JSONObject jsonObject = DataAssembleHelper.getInstance().genEmitMessgeJson("TOK_ETH");
+        WebSocketHelper.getInstance().emit(WebSocketHelper.EMIT_EVENTS[0], jsonObject);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         WebSocketHelper.getInstance().release();
-
-        //释放资源
-        mSocket.disconnect();
-        mSocket.off(Socket.EVENT_CONNECT, onConnect);
-        mSocket.off(Socket.EVENT_DISCONNECT, onDisconnect);
-        mSocket.off(Socket.EVENT_CONNECT_ERROR, onConnectError);
-        mSocket.off(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
-        mSocket.off("new message", onNewMessage);
-        mSocket.off("user joined", onUserJoined);
-        mSocket.off("user left", onUserLeft);
-        mSocket.off("typing", onTyping);
-        mSocket.off("stop typing", onStopTyping);
-
-        mSocket.off("login", commonListener);
-        mSocket.off("msg", commonListener);
-        mSocket.off("message", commonListener);
-        mSocket.off("onlineLength", commonListener);
-        mSocket.off("messageBack", commonListener);
-        mSocket.off("request", commonListener);
-        mSocket.off("formalTrade", commonListener);
-        mSocket.off("kline", commonListener);
+        WebSocketHelper.getInstance().unListener(events, listeners);
     }
 }

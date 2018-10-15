@@ -5,6 +5,8 @@ import com.blankj.utilcode.util.LogUtils;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import io.socket.client.IO;
@@ -45,7 +47,19 @@ public class WebSocketHelper {
      */
     public static final String[] EMIT_EVENTS = {"request"};
 
+    /**
+     * 状态码-成功
+     */
+    private static final int STATE_CODE_SUCCESS = 200;
+
+    /**
+     * 参数长度为2
+     */
+    private static final int ARGS_LENGTH_2 = 2;
+
     private Socket mSocket;
+
+    private List<OnDataReceiveListener> mOnDataReceiveListeners = new ArrayList<>();
 
     /**
      * 初始化
@@ -68,6 +82,14 @@ public class WebSocketHelper {
     }
 
     /**
+     * 简化流程，初始化并连接
+     */
+    public void initAndConnect() {
+        init();
+        connect();
+    }
+
+    /**
      * 断开连接
      */
     private void disconnect() {
@@ -79,7 +101,7 @@ public class WebSocketHelper {
      */
     public void release() {
         disconnect();
-        unListener();
+        unListener(null, null);
     }
 
     /**
@@ -89,33 +111,73 @@ public class WebSocketHelper {
      * @param args  数据
      */
     public void emit(final String event, final Object... args) {
+        LogUtils.i(String.format(Locale.CHINA, "emit数据【%s】 ", args));
         mSocket.emit(event, args);
     }
 
     /**
      * 监听服务端发送的数据,如使用 onMessageListener 来监听服务器发来的 "message" 事件
+     *
+     * @param events    事件数组
+     * @param listeners 监听器数组
      */
-    public void listener() {
-        //系统默认的事件
+    public void listener(List<String> events, List<Emitter.Listener> listeners) {
+        if (events == null || listeners == null) {
+            events = new ArrayList<>();
+            events.add(ON_EVENTS[0]);
+            listeners = new ArrayList<>();
+            listeners.add(onMessageListener);
+        }
+        if (events.size() == listeners.size()) {
+            listenerSystemEvent();
+            //后面的是自定义的事件
+            for (int i = 0; i < events.size(); i++) {
+                mSocket.on(events.get(i), listeners.get(i));
+            }
+        } else {
+            throw new IllegalArgumentException("事件数组和监听器数组长度不一致");
+        }
+    }
+
+    /**
+     * 监听系统默认的事件
+     */
+    private void listenerSystemEvent() {
         mSocket.on(Socket.EVENT_CONNECT, onConnect);
         mSocket.on(Socket.EVENT_DISCONNECT, onDisconnect);
         mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectError);
         mSocket.on(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
-        //后面的是自定义的事件
-        mSocket.on(ON_EVENTS[0], onMessageListener);
+    }
+
+    /**
+     * 注销监听系统默认的事件
+     */
+    private void unListenerSystemEvent() {
+        mSocket.off(Socket.EVENT_CONNECT, onConnect);
+        mSocket.off(Socket.EVENT_DISCONNECT, onDisconnect);
+        mSocket.off(Socket.EVENT_CONNECT_ERROR, onConnectError);
+        mSocket.off(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
     }
 
     /**
      * 注销事件，释放资源
      */
-    private void unListener() {
-        //系统默认的事件
-        mSocket.off(Socket.EVENT_CONNECT, onConnect);
-        mSocket.off(Socket.EVENT_DISCONNECT, onDisconnect);
-        mSocket.off(Socket.EVENT_CONNECT_ERROR, onConnectError);
-        mSocket.off(Socket.EVENT_CONNECT_TIMEOUT, onConnectError);
-        //后面的是自定义的事件
-        mSocket.off(ON_EVENTS[0], onMessageListener);
+    public void unListener(List<String> events, List<Emitter.Listener> listeners) {
+        if (events == null || listeners == null) {
+            events = new ArrayList<>();
+            events.add(ON_EVENTS[0]);
+            listeners = new ArrayList<>();
+            listeners.add(onMessageListener);
+        }
+        if (events.size() == listeners.size()) {
+            unListenerSystemEvent();
+            //后面的是自定义的事件
+            for (int i = 0; i < events.size(); i++) {
+                mSocket.off(events.get(i), listeners.get(i));
+            }
+        } else {
+            throw new IllegalArgumentException("事件数组和监听器数组长度不一致");
+        }
     }
 
     /**
@@ -157,7 +219,17 @@ public class WebSocketHelper {
     private Emitter.Listener onMessageListener = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
-            LogUtils.i("onMessageListener 新数据来啦 args.length = " + args.length);
+            int length = args.length;
+            //LogUtils.i("onMessageListener 新数据来啦 args.length = " + length);
+            for (int i = 0; i < length; i++) {
+                Object arg = args[i];
+                if (arg instanceof JSONObject) {
+                    //LogUtils.json(arg.toString());
+                }
+                if (arg != null) {
+                    //LogUtils.i(String.format(Locale.CHINA, "arg[%d] = %s", i, arg));
+                }
+            }
             handlerData(args);
         }
     };
@@ -168,14 +240,30 @@ public class WebSocketHelper {
      * @param args 参数
      */
     private void handlerData(Object... args) {
-        for (int i = 0; i < args.length; i++) {
-            Object arg = args[i];
-            if (arg instanceof JSONObject) {
-                LogUtils.json(arg.toString());
+        int length = args.length;
+        if (length >= ARGS_LENGTH_2 && ((int) args[1]) == STATE_CODE_SUCCESS) {
+            Object data = args[0];
+            if (data instanceof JSONObject) {
+                if (this.mOnDataReceiveListeners.size() > 0) {
+                    LogUtils.i(String.format(Locale.CHINA, "接收到了数据，发给【%d】个UI界面显示【%s】", this.mOnDataReceiveListeners.size(), data.toString().substring(0, 250)));
+                    for (OnDataReceiveListener listener : mOnDataReceiveListeners) {
+                        listener.onDataReceive(data);
+                    }
+                }
             }
-            if (arg != null) {
-                LogUtils.i(String.format(Locale.CHINA, "arg[%d] = %s", i, arg));
-            }
+        }
+
+    }
+
+    public void registerDataReceiveListener(OnDataReceiveListener mOnDataReceiveListener) {
+        if (!this.mOnDataReceiveListeners.contains(mOnDataReceiveListener)) {
+            this.mOnDataReceiveListeners.add(mOnDataReceiveListener);
+        }
+    }
+
+    public void unRegisterDataReceiveListener(OnDataReceiveListener mOnDataReceiveListener) {
+        if (this.mOnDataReceiveListeners.contains(mOnDataReceiveListener)) {
+            this.mOnDataReceiveListeners.remove(mOnDataReceiveListener);
         }
     }
 
@@ -188,5 +276,17 @@ public class WebSocketHelper {
         for (int i = 0; i < args.length; i++) {
             LogUtils.i(String.format(Locale.CHINA, "arg[%d] = %s", i, args[i]));
         }
+    }
+
+    /**
+     * 数据接收监听
+     */
+    public interface OnDataReceiveListener {
+        /**
+         * 当接收到数据的时候回调
+         *
+         * @param object Object
+         */
+        void onDataReceive(Object object);
     }
 }
