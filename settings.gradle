@@ -1,1 +1,1 @@
-include ':app', ':socket.ioandroidchat'
+include ':app'
